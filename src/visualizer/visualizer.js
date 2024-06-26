@@ -120,9 +120,12 @@ var readyStateCheckInterval = setInterval(() => {
       } else if (e.which === 8 || e.which === 37) {
         // BACKSPACE or <-
         prevPreset(5.7);
-      } else if (e.which === 72) {
-        // H
+      } else if (e.which === 72 || e.which === 190) {
+        // H or .
         nextPreset(0);
+      } else if (e.which === 188) {
+        // ,
+        prevPreset(0);
         // } else if (e.which === 82) {
         //   // R
         //   toggleRandomize();
