@@ -2,6 +2,20 @@ var readyStateCheckInterval = setInterval(() => {
   if (document.readyState === "complete") {
     clearInterval(readyStateCheckInterval);
 
+    const currentPresetEl = document.getElementById("current-visualizer");
+    const btnPrev = document.getElementById("btn-prev");
+    const btnNext = document.getElementById("btn-next");
+    const btnInstaPrev = document.getElementById("btn-insta-prev");
+    const btnInstaNext = document.getElementById("btn-insta-next");
+
+    currentPresetEl.addEventListener("click", () => {
+      currentPresetEl.setAttribute("contenteditable", "true");
+      currentPresetEl.focus();
+    });
+    currentPresetEl.addEventListener("blur", () => {
+      currentPresetEl.removeAttribute("contenteditable");
+    });
+
     const noAudioOverlay = document.getElementById("noAudioOverlay");
     const canvas = document.getElementById("canvas");
     const visualizer = butterchurn.default.createVisualizer(null, canvas, {
@@ -16,13 +30,9 @@ var readyStateCheckInterval = setInterval(() => {
 
     const presets = allButterchurnPresets.default;
     const presetKeys = Object.keys(presets);
-    const presetIndexHist = [];
+    let currentPreset = "";
     let presetCycle = true;
-    let nextPreset,
-      prevPreset,
-      restartCycleInterval,
-      cycleInterval,
-      toggleRandomize;
+    let nextPreset, prevPreset, setPreset;
 
     const setVisualizerSize = () => {
       const vizWidth = window.innerWidth;
@@ -42,64 +52,33 @@ var readyStateCheckInterval = setInterval(() => {
 
       try {
         const presetIdx = presets[visName];
-        presetIndexHist.push(visName);
+        currentPreset = visName;
         visualizer.loadPreset(presetIdx, 0);
       } catch (e) {
         alert("Invalid mode");
       }
     };
 
+    setPreset = (visName, blendTime) => {
+      currentPreset = visName;
+      visualizer.loadPreset(presets[visName], blendTime);
+      currentPresetEl.innerText = visName;
+    };
+
     nextPreset = (blendTime) => {
-      const index = presetKeys.indexOf(presetIndexHist.at(-1));
+      const index = presetKeys.indexOf(currentPreset);
       const visName = presetKeys[index + 1];
-      const presetIdx = presets[visName];
-      console.log(visName);
-      presetIndexHist.push(visName);
-      visualizer.loadPreset(presetIdx, blendTime);
-      restartCycleInterval();
+      setPreset(visName, blendTime);
     };
 
     prevPreset = (blendTime) => {
-      let presetIdx;
-      if (presetIndexHist.length > 0) {
-        presetIndexHist.pop();
-
-        if (presetIndexHist.length > 0) {
-          presetIdx = presets[presetIndexHist.at(-1)];
-        } else {
-          presetIdx =
-            presets[presetKeys[Math.floor(presetKeys.length * Math.random())]];
-        }
-      } else {
-        presetIdx =
-          presets[presetKeys[Math.floor(presetKeys.length * Math.random())]];
-      }
-
-      visualizer.loadPreset(presetIdx, blendTime);
-      restartCycleInterval();
-    };
-
-    restartCycleInterval = () => {
-      // if (cycleInterval) {
-      //   clearInterval(cycleInterval);
-      //   cycleInterval = null;
-      // }
-      // if (presetCycle) {
-      //   cycleInterval = setInterval(() => {
-      //     nextPreset(2.7);
-      //   }, 24000);
-      // }
-    };
-
-    toggleRandomize = () => {
-      presetCycle = !presetCycle;
-      restartCycleInterval();
+      const index = presetKeys.indexOf(currentPreset);
+      const visName = presetKeys[index - 1];
+      setPreset(visName, blendTime);
     };
 
     setVisualizerSize();
-    const presetIdx = presets["$$$ Royal - Mashup (197)"];
-    presetIndexHist.push("$$$ Royal - Mashup (197)");
-    visualizer.loadPreset(presetIdx, 0);
+    setPreset("$$$ Royal - Mashup (197)", 0);
 
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.type === "startRendering") {
@@ -114,25 +93,33 @@ var readyStateCheckInterval = setInterval(() => {
     });
 
     document.addEventListener("keydown", (e) => {
-      if (e.which === 32 || e.which === 39) {
-        // SPACE or ->
+      if (e.key === "ArrowRight") {
         nextPreset(5.7);
-      } else if (e.which === 8 || e.which === 37) {
-        // BACKSPACE or <-
+      } else if (e.key === "ArrowLeft") {
         prevPreset(5.7);
-      } else if (e.which === 72 || e.which === 190) {
-        // H or .
+      } else if (e.key === ".") {
         nextPreset(0);
-      } else if (e.which === 188) {
-        // ,
+      } else if (e.key === ",") {
         prevPreset(0);
-        // } else if (e.which === 82) {
-        //   // R
-        //   toggleRandomize();
-      } else if (e.which === 81) {
-        // Q
+      } else if (e.key === "q") {
         promptForMode();
       }
+    });
+
+    btnPrev.addEventListener("click", () => {
+      prevPreset(5.7);
+    });
+
+    btnNext.addEventListener("click", () => {
+      nextPreset(5.7);
+    });
+
+    btnInstaPrev.addEventListener("click", () => {
+      prevPreset(0);
+    });
+
+    btnInstaNext.addEventListener("click", () => {
+      nextPreset(0);
     });
 
     window.addEventListener("resize", () => {
