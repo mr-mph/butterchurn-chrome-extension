@@ -2,13 +2,41 @@ var readyStateCheckInterval = setInterval(() => {
   if (document.readyState === "complete") {
     clearInterval(readyStateCheckInterval);
 
+    let nextPreset,
+      prevPreset,
+      setPreset,
+      setPresetList,
+      currentPreset,
+      presets,
+      presetKeys,
+      favoriteSong;
+
     let presetFocused = false;
+    let songFavorited = false;
 
     const currentPresetEl = document.getElementById("current-visualizer");
     const btnPrev = document.getElementById("btn-prev");
     const btnNext = document.getElementById("btn-next");
     const btnInstaPrev = document.getElementById("btn-insta-prev");
     const btnInstaNext = document.getElementById("btn-insta-next");
+    const btnFavorite = document.getElementById("btn-favorite");
+    const iconFavorite = document.getElementById("icon-favorite");
+
+    btnFavorite.addEventListener("click", () => {
+      chrome.storage.sync.get(["favoritePresets"], (result) => {
+        let favoritePresets = result.favoritePresets || [];
+        if (songFavorited) {
+          favoritePresets = favoritePresets.filter(
+            (preset) => preset !== currentPreset
+          );
+        } else {
+          favoritePresets.push(currentPreset);
+        }
+        songFavorited = !songFavorited;
+        favoriteSong(songFavorited);
+        chrome.storage.sync.set({ favoritePresets });
+      });
+    });
 
     currentPresetEl.addEventListener("click", () => {
       currentPresetEl.setAttribute("contenteditable", "true");
@@ -64,14 +92,6 @@ var readyStateCheckInterval = setInterval(() => {
     });
     visualizer.loadExtraImages(imageDataButterchurnPresets.default);
 
-    let nextPreset,
-      prevPreset,
-      setPreset,
-      setPresetList,
-      currentPreset,
-      presets,
-      presetKeys;
-
     const setVisualizerSize = () => {
       const vizWidth = window.innerWidth;
       const vizHeight = window.innerHeight;
@@ -85,10 +105,12 @@ var readyStateCheckInterval = setInterval(() => {
     };
 
     setPresetList = (value) => {
-      let currentPreset = "$$$ Royal - Mashup (197)";
+      var currentPreset = "$$$ Royal - Mashup (197)";
       if (value === "all") {
         presets = allButterchurnPresets.default;
-      } else if (value == "curated") {
+        presetKeys = Object.keys(presets);
+        setPreset(currentPreset, 0);
+      } else if (value === "curated") {
         presetKeys = [
           "27",
           "158",
@@ -108,14 +130,37 @@ var readyStateCheckInterval = setInterval(() => {
             acc[key] = allButterchurnPresets.default[key];
             return acc;
           }, {});
+        setPreset(currentPreset, 0);
+      } else if (value === "favorites") {
+        chrome.storage.sync.get(["favoritePresets"], (result) => {
+          presetKeys = result.favoritePresets || [];
+          presets = Object.keys(allButterchurnPresets.default)
+            .filter((key) => presetKeys.includes(key))
+            .reduce((acc, key) => {
+              acc[key] = allButterchurnPresets.default[key];
+              return acc;
+            }, {});
+          if (presetKeys.length === 0) {
+            currentPreset = "No favorites yet";
+            presetKeys = ["No favorites yet"];
+            presets = { "No favorites yet": {} };
+          }
+          setPreset(currentPreset, 0);
+        });
       }
-      setPreset(currentPreset, 0);
     };
 
     setPreset = (visName, blendTime) => {
       currentPreset = visName;
       visualizer.loadPreset(presets[visName], blendTime);
       currentPresetEl.innerText = visName;
+      chrome.storage.sync.get(["favoritePresets"], (result) => {
+        if (result.favoritePresets.includes(visName)) {
+          favoriteSong(true);
+        } else {
+          favoriteSong(false);
+        }
+      });
     };
 
     nextPreset = (blendTime) => {
@@ -126,7 +171,6 @@ var readyStateCheckInterval = setInterval(() => {
       } else {
         visName = presetKeys.at(index + 1);
       }
-
       setPreset(visName, blendTime);
     };
 
@@ -134,6 +178,18 @@ var readyStateCheckInterval = setInterval(() => {
       const index = presetKeys.indexOf(currentPreset);
       const visName = presetKeys.at(index - 1);
       setPreset(visName, blendTime);
+    };
+
+    favoriteSong = (favorite) => {
+      if (favorite) {
+        songFavorited = true;
+        iconFavorite.classList.add("fas");
+        iconFavorite.classList.remove("far");
+      } else {
+        songFavorited = false;
+        iconFavorite.classList.add("far");
+        iconFavorite.classList.remove("fas");
+      }
     };
 
     setVisualizerSize();

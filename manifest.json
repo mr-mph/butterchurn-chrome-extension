@@ -13,9 +13,7 @@
     "512": "icons/icon512.png"
   },
   "background": {
-    "scripts": [
-      "src/background.js"
-    ],
+    "scripts": ["src/background.js"],
     "persistent": false
   },
   "browser_action": {
@@ -28,9 +26,7 @@
     },
     "default_title": "Butterchurn Visualizer"
   },
-  "permissions": [
-    "tabCapture"
-  ],
+  "permissions": ["tabCapture", "storage"],
   "offline_enabled": true,
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
 }
