@@ -2,6 +2,8 @@ var readyStateCheckInterval = setInterval(() => {
   if (document.readyState === "complete") {
     clearInterval(readyStateCheckInterval);
 
+    let presetFocused = false;
+
     const currentPresetEl = document.getElementById("current-visualizer");
     const btnPrev = document.getElementById("btn-prev");
     const btnNext = document.getElementById("btn-next");
@@ -11,10 +13,38 @@ var readyStateCheckInterval = setInterval(() => {
     currentPresetEl.addEventListener("click", () => {
       currentPresetEl.setAttribute("contenteditable", "true");
       currentPresetEl.focus();
+      presetFocused = true;
     });
+
+    currentPresetEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        currentPresetEl.blur();
+      }
+    });
+
     currentPresetEl.addEventListener("blur", () => {
       currentPresetEl.removeAttribute("contenteditable");
+      presetFocused = false;
+      setPreset(currentPresetEl.innerText, 0);
     });
+
+    const menu = document.getElementById("menu");
+
+    const hideMenu = () => {
+      if (!presetFocused) {
+        menu.classList.add("hidden");
+      }
+    };
+
+    const showMenu = () => {
+      menu.classList.remove("hidden");
+    };
+
+    setTimeout(hideMenu, 3000);
+
+    menu.addEventListener("mouseenter", showMenu);
+    menu.addEventListener("mouseleave", hideMenu);
 
     const noAudioOverlay = document.getElementById("noAudioOverlay");
     const canvas = document.getElementById("canvas");
@@ -31,7 +61,6 @@ var readyStateCheckInterval = setInterval(() => {
     const presets = allButterchurnPresets.default;
     const presetKeys = Object.keys(presets);
     let currentPreset = "";
-    let presetCycle = true;
     let nextPreset, prevPreset, setPreset;
 
     const setVisualizerSize = () => {
@@ -46,19 +75,6 @@ var readyStateCheckInterval = setInterval(() => {
       noAudioOverlay.style.height = `${vizHeight}px`;
     };
 
-    const promptForMode = () => {
-      // set visualizer to what the user wants
-      const visName = prompt("What visualizer?");
-
-      try {
-        const presetIdx = presets[visName];
-        currentPreset = visName;
-        visualizer.loadPreset(presetIdx, 0);
-      } catch (e) {
-        alert("Invalid mode");
-      }
-    };
-
     setPreset = (visName, blendTime) => {
       currentPreset = visName;
       visualizer.loadPreset(presets[visName], blendTime);
@@ -67,13 +83,13 @@ var readyStateCheckInterval = setInterval(() => {
 
     nextPreset = (blendTime) => {
       const index = presetKeys.indexOf(currentPreset);
-      const visName = presetKeys[index + 1];
+      const visName = presetKeys.at(index + 1);
       setPreset(visName, blendTime);
     };
 
     prevPreset = (blendTime) => {
       const index = presetKeys.indexOf(currentPreset);
-      const visName = presetKeys[index - 1];
+      const visName = presetKeys.at(index - 1);
       setPreset(visName, blendTime);
     };
 
@@ -93,6 +109,9 @@ var readyStateCheckInterval = setInterval(() => {
     });
 
     document.addEventListener("keydown", (e) => {
+      if (presetFocused) {
+        return;
+      }
       if (e.key === "ArrowRight") {
         nextPreset(5.7);
       } else if (e.key === "ArrowLeft") {
@@ -101,8 +120,6 @@ var readyStateCheckInterval = setInterval(() => {
         nextPreset(0);
       } else if (e.key === ",") {
         prevPreset(0);
-      } else if (e.key === "q") {
-        promptForMode();
       }
     });
 
