@@ -46,6 +46,12 @@ var readyStateCheckInterval = setInterval(() => {
     menu.addEventListener("mouseenter", showMenu);
     menu.addEventListener("mouseleave", hideMenu);
 
+    const presetListEl = document.getElementById("preset-list");
+
+    presetListEl.addEventListener("change", (e) => {
+      setPresetList(e.target.value);
+    });
+
     const noAudioOverlay = document.getElementById("noAudioOverlay");
     const canvas = document.getElementById("canvas");
     const visualizer = butterchurn.default.createVisualizer(null, canvas, {
@@ -58,10 +64,13 @@ var readyStateCheckInterval = setInterval(() => {
     });
     visualizer.loadExtraImages(imageDataButterchurnPresets.default);
 
-    const presets = allButterchurnPresets.default;
-    const presetKeys = Object.keys(presets);
-    let currentPreset = "";
-    let nextPreset, prevPreset, setPreset;
+    let nextPreset,
+      prevPreset,
+      setPreset,
+      setPresetList,
+      currentPreset,
+      presets,
+      presetKeys;
 
     const setVisualizerSize = () => {
       const vizWidth = window.innerWidth;
@@ -75,6 +84,34 @@ var readyStateCheckInterval = setInterval(() => {
       noAudioOverlay.style.height = `${vizHeight}px`;
     };
 
+    setPresetList = (value) => {
+      let currentPreset = "$$$ Royal - Mashup (197)";
+      if (value === "all") {
+        presets = allButterchurnPresets.default;
+      } else if (value == "curated") {
+        presetKeys = [
+          "27",
+          "158",
+          "_Mig_085",
+          "Eo.S. - glowsticks v2 03 music",
+          "$$$ Royal - Mashup (197)",
+          "flexi + geiss - pogo cubes vs. tokamak vs. game of life [stahls jelly 4.5 finish]",
+          "Geiss - Cauldron - painterly 2 (saturation remix)",
+          "martin [shadow harlequins shape code] - fata morgana",
+          "ORB - Waaa",
+          "Rovastar - Oozing Resistance",
+          "Zylot - True Visionary (Final Mix)",
+        ];
+        presets = Object.keys(allButterchurnPresets.default)
+          .filter((key) => presetKeys.includes(key))
+          .reduce((acc, key) => {
+            acc[key] = allButterchurnPresets.default[key];
+            return acc;
+          }, {});
+      }
+      setPreset(currentPreset, 0);
+    };
+
     setPreset = (visName, blendTime) => {
       currentPreset = visName;
       visualizer.loadPreset(presets[visName], blendTime);
@@ -83,7 +120,13 @@ var readyStateCheckInterval = setInterval(() => {
 
     nextPreset = (blendTime) => {
       const index = presetKeys.indexOf(currentPreset);
-      const visName = presetKeys.at(index + 1);
+      let visName;
+      if (index == presetKeys.length - 1) {
+        visName = presetKeys.at(0);
+      } else {
+        visName = presetKeys.at(index + 1);
+      }
+
       setPreset(visName, blendTime);
     };
 
@@ -94,7 +137,7 @@ var readyStateCheckInterval = setInterval(() => {
     };
 
     setVisualizerSize();
-    setPreset("$$$ Royal - Mashup (197)", 0);
+    setPresetList("all");
 
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.type === "startRendering") {

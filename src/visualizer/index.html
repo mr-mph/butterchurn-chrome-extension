@@ -42,7 +42,7 @@
         border-radius: 10px;
         margin: 10px;
         opacity: 1;
-        transition: opacity 0.5s ease-in-out;
+        transition: opacity 0.2s ease-in-out;
       }
 
       #menu.hidden {
@@ -98,6 +98,20 @@
         border-radius: 4px;
         padding: 2px;
       }
+
+      #preset-list {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f000;
+        border: 1px solid #cccccc39;
+        padding: 8px;
+        border-radius: 4px;
+        outline: none;
+        color: white;
+      }
+
+      #preset-list option {
+        color: #ffffff;
+      }
     </style>
     <script src="../../lib/butterchurn.min.js"></script>
     <script src="../../lib/butterchurnPresetsAll.min.js"></script>
@@ -128,6 +142,12 @@
           <button id="btn-insta-next">
             <i class="fas fa-fast-forward"></i>
           </button>
+        </div>
+        <div class="row">
+          <select id="preset-list">
+            <option value="all">All</option>
+            <option value="curated">Curated</option>
+          </select>
         </div>
       </div>
     </div>
