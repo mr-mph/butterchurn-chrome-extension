@@ -9,10 +9,14 @@ var readyStateCheckInterval = setInterval(() => {
       currentPreset,
       presets,
       presetKeys,
-      favoriteSong;
+      favoriteSong,
+      shuffleList,
+      getSemiRandomPreset;
 
     let presetFocused = false;
     let songFavorited = false;
+    let isShuffling = false;
+    let shufflePrevList = [];
 
     const currentPresetEl = document.getElementById("current-visualizer");
     const btnPrev = document.getElementById("btn-prev");
@@ -21,6 +25,8 @@ var readyStateCheckInterval = setInterval(() => {
     const btnInstaNext = document.getElementById("btn-insta-next");
     const btnFavorite = document.getElementById("btn-favorite");
     const iconFavorite = document.getElementById("icon-favorite");
+    const btnShuffle = document.getElementById("btn-shuffle");
+    const iconShuffle = document.getElementById("icon-shuffle");
 
     btnFavorite.addEventListener("click", () => {
       chrome.storage.sync.get(["favoritePresets"], (result) => {
@@ -36,6 +42,10 @@ var readyStateCheckInterval = setInterval(() => {
         favoriteSong(songFavorited);
         chrome.storage.sync.set({ favoritePresets });
       });
+    });
+
+    btnShuffle.addEventListener("click", () => {
+      shuffleList(!isShuffling);
     });
 
     currentPresetEl.addEventListener("click", () => {
@@ -105,24 +115,36 @@ var readyStateCheckInterval = setInterval(() => {
     };
 
     setPresetList = (value) => {
-      var currentPreset = "$$$ Royal - Mashup (197)";
+      let currentPreset;
       if (value === "all") {
         presets = allButterchurnPresets.default;
         presetKeys = Object.keys(presets);
+        currentPreset = "ORB - Waaa";
         setPreset(currentPreset, 0);
       } else if (value === "curated") {
         presetKeys = [
+          // handpicked by me
           "27",
+          "martin [shadow harlequins shape code] - fata morgana",
+          "_Mig_COLORFUL9",
+          "$$$ Royal - Mashup (177)",
+          "$$$ Royal - Mashup (417)",
+          "Geiss - 3 layers (Tunnel Mix)",
+          "ORB - Pastel Primer",
+          "Rovastar - Explosive Minds",
+          "cope - digital sea",
+          "Zylot - True Visionary (Final Mix)",
+          "Geiss - Feedback 2",
+          "Aderrasi - Veil of Steel (Steel Storm) - mash0000 - bob ross finally loses it",
+          "$$$ Royal - Mashup (197)",
+          "ORB - Sandblade",
+          "ORB - Solar Radiation",
+          "Geiss - Cauldron - painterly 2 (saturation remix)",
+          "ORB - Waaa",
+          "flexi + geiss - pogo cubes vs. tokamak vs. game of life [stahls jelly 4.5 finish]",
           "158",
           "_Mig_085",
           "Eo.S. - glowsticks v2 03 music",
-          "$$$ Royal - Mashup (197)",
-          "flexi + geiss - pogo cubes vs. tokamak vs. game of life [stahls jelly 4.5 finish]",
-          "Geiss - Cauldron - painterly 2 (saturation remix)",
-          "martin [shadow harlequins shape code] - fata morgana",
-          "ORB - Waaa",
-          "Rovastar - Oozing Resistance",
-          "Zylot - True Visionary (Final Mix)",
         ];
         presets = Object.keys(allButterchurnPresets.default)
           .filter((key) => presetKeys.includes(key))
@@ -130,10 +152,12 @@ var readyStateCheckInterval = setInterval(() => {
             acc[key] = allButterchurnPresets.default[key];
             return acc;
           }, {});
+        currentPreset = "27";
         setPreset(currentPreset, 0);
       } else if (value === "favorites") {
         chrome.storage.sync.get(["favoritePresets"], (result) => {
           presetKeys = result.favoritePresets || [];
+          currentPreset = presetKeys.at(0);
           presets = Object.keys(allButterchurnPresets.default)
             .filter((key) => presetKeys.includes(key))
             .reduce((acc, key) => {
@@ -163,20 +187,52 @@ var readyStateCheckInterval = setInterval(() => {
       });
     };
 
+    getSemiRandomPreset = () => {
+      let semiRandomPreset;
+      let doneShuffling = false;
+      let recent = shufflePrevList.slice(Math.ceil(shufflePrevList.length / 2));
+      if (shufflePrevList.length <= 1) {
+        recent = [];
+      }
+      while (!doneShuffling) {
+        semiRandomPreset = presetKeys.at(
+          Math.round((presetKeys.length - 1) * Math.random())
+        );
+        if (!recent.includes(semiRandomPreset)) {
+          doneShuffling = true;
+        }
+      }
+      return semiRandomPreset;
+    };
+
     nextPreset = (blendTime) => {
-      const index = presetKeys.indexOf(currentPreset);
       let visName;
-      if (index == presetKeys.length - 1) {
-        visName = presetKeys.at(0);
+      if (isShuffling) {
+        visName = getSemiRandomPreset();
+        shufflePrevList.push(currentPreset);
       } else {
-        visName = presetKeys.at(index + 1);
+        const index = presetKeys.indexOf(currentPreset);
+        if (index == presetKeys.length - 1) {
+          visName = presetKeys.at(0);
+        } else {
+          visName = presetKeys.at(index + 1);
+        }
       }
       setPreset(visName, blendTime);
     };
 
     prevPreset = (blendTime) => {
-      const index = presetKeys.indexOf(currentPreset);
-      const visName = presetKeys.at(index - 1);
+      let visName;
+      if (isShuffling) {
+        if (shufflePrevList.length === 0) {
+          visName = getSemiRandomPreset();
+        } else {
+          visName = shufflePrevList.pop();
+        }
+      } else {
+        const index = presetKeys.indexOf(currentPreset);
+        visName = presetKeys.at(index - 1);
+      }
       setPreset(visName, blendTime);
     };
 
@@ -189,6 +245,18 @@ var readyStateCheckInterval = setInterval(() => {
         songFavorited = false;
         iconFavorite.classList.add("far");
         iconFavorite.classList.remove("fas");
+      }
+    };
+
+    shuffleList = (shuffle) => {
+      if (shuffle) {
+        isShuffling = true;
+        iconShuffle.classList.add("fa-shuffle");
+        iconShuffle.classList.remove("fa-repeat");
+      } else {
+        isShuffling = false;
+        iconShuffle.classList.add("fa-repeat");
+        iconShuffle.classList.remove("fa-shuffle");
       }
     };
 
