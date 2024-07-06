@@ -1,4 +1,6 @@
 # butterchurn-chrome-extension
+<img width="1680" alt="image" src="https://github.com/mr-mph/butterchurn-chrome-extension/assets/88854453/0214a132-900d-47ef-9ff4-e5a22af3aabb">
+
 
 # Install
 Install from the Chrome webstore to automatically get updates: [Butterchurn Extension](https://chrome.google.com/webstore/detail/butterchurn-music-visuali/jfdmelgfepjcmlljpdeajbiiibkehnih)
