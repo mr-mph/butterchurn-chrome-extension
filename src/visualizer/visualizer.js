@@ -79,6 +79,27 @@ var readyStateCheckInterval = setInterval(() => {
       menu.classList.remove("hidden");
     };
 
+    // from https://gist.github.com/scmx/1f79adde2e9c69912fee520a246ec9e5
+    let idleMouseTimer;
+    let forceMouseHide = false;
+
+    document.body.style.cursor = "none";
+    document.body.addEventListener("mousemove", () => {
+      if (forceMouseHide) {
+        return;
+      }
+
+      document.body.style.cursor = "";
+      clearTimeout(idleMouseTimer);
+      idleMouseTimer = setTimeout(() => {
+        document.body.style.cursor = "none";
+        forceMouseHide = true;
+        setTimeout(() => {
+          forceMouseHide = false;
+        }, 200);
+      }, 1000);
+    });
+
     setTimeout(hideMenu, 3000);
 
     menu.addEventListener("mouseenter", showMenu);
