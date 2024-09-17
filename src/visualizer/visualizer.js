@@ -145,6 +145,8 @@ var readyStateCheckInterval = setInterval(() => {
       } else if (value === "curated") {
         presetKeys = [
           // handpicked by me
+          "cope - digital sea",
+          "ORB - Waaa",
           "27",
           "martin [shadow harlequins shape code] - fata morgana",
           "_Mig_COLORFUL9",
@@ -153,7 +155,6 @@ var readyStateCheckInterval = setInterval(() => {
           "Geiss - 3 layers (Tunnel Mix)",
           "ORB - Pastel Primer",
           "Rovastar - Explosive Minds",
-          "cope - digital sea",
           "Zylot - True Visionary (Final Mix)",
           "Geiss - Feedback 2",
           "Aderrasi - Veil of Steel (Steel Storm) - mash0000 - bob ross finally loses it",
@@ -161,7 +162,6 @@ var readyStateCheckInterval = setInterval(() => {
           "ORB - Sandblade",
           "ORB - Solar Radiation",
           "Geiss - Cauldron - painterly 2 (saturation remix)",
-          "ORB - Waaa",
           "flexi + geiss - pogo cubes vs. tokamak vs. game of life [stahls jelly 4.5 finish]",
           "158",
           "_Mig_085",
@@ -282,7 +282,7 @@ var readyStateCheckInterval = setInterval(() => {
     };
 
     setVisualizerSize();
-    setPresetList("all");
+    setPresetList("curated");
 
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.type === "startRendering") {
