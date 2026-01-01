@@ -2,7 +2,7 @@
   "name": "Butterchurn Music Visualizer Extension",
   "short_name": "Butterchurn Visualizer",
   "version": "0.2.0",
-  "manifest_version": 2,
+  "manifest_version": 3,
   "description": "Visualizes the audio playing using the MilkDrop 2 visualizer",
   "homepage_url": "https://butterchurnviz.com/extension",
   "icons": {
@@ -27,6 +27,5 @@
     "default_title": "Butterchurn Visualizer"
   },
   "permissions": ["tabCapture", "storage"],
-  "offline_enabled": true,
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
+  "offline_enabled": true
 }
