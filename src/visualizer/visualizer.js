@@ -284,16 +284,123 @@ var readyStateCheckInterval = setInterval(() => {
     setVisualizerSize();
     setPresetList("curated");
 
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-      if (request.type === "startRendering") {
-        noAudioOverlay.style.display = "none";
-      } else if (request.type === "stopRendering") {
+    // Parse stream ID from URL and set up audio capture
+    const urlParams = new URLSearchParams(window.location.search);
+    const streamId = urlParams.get("streamId");
+    const sourceTabId = parseInt(urlParams.get("tabId"), 10);
+
+    let audioContext = null;
+    let analyser = null;
+    let analyserL = null;
+    let analyserR = null;
+    let renderLoopId = null;
+    let isRendering = false;
+
+    async function initAudioCapture() {
+      if (!streamId) {
+        console.error("No stream ID provided");
         noAudioOverlay.style.display = "flex";
-      } else if (request.type === "audioData") {
-        visualizer.render(request.data);
+        return;
       }
 
-      sendResponse();
+      try {
+        // Get the audio stream using the stream ID from tabCapture
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            mandatory: {
+              chromeMediaSource: "tab",
+              chromeMediaSourceId: streamId,
+            },
+          },
+          video: false,
+        });
+
+        // Set up audio context and analysers
+        audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(stream);
+
+        // Connect to destination so audio plays through
+        source.connect(audioContext.destination);
+
+        // Create analysers
+        analyser = audioContext.createAnalyser();
+        analyser.smoothingTimeConstant = 0.0;
+        analyser.fftSize = 1024;
+
+        analyserL = audioContext.createAnalyser();
+        analyserL.smoothingTimeConstant = 0.0;
+        analyserL.fftSize = 1024;
+
+        analyserR = audioContext.createAnalyser();
+        analyserR.smoothingTimeConstant = 0.0;
+        analyserR.fftSize = 1024;
+
+        // Split stereo channels
+        const splitter = audioContext.createChannelSplitter(2);
+
+        source.connect(analyser);
+        source.connect(splitter);
+        splitter.connect(analyserL, 0);
+        splitter.connect(analyserR, 1);
+
+        // Start rendering
+        startRenderLoop();
+        noAudioOverlay.style.display = "none";
+        isRendering = true;
+      } catch (error) {
+        console.error("Failed to capture audio:", error);
+        noAudioOverlay.style.display = "flex";
+      }
+    }
+
+    function startRenderLoop() {
+      let lastTime = performance.now();
+
+      function render() {
+        const timeByteArray = new Uint8Array(1024);
+        const timeByteArrayL = new Uint8Array(1024);
+        const timeByteArrayR = new Uint8Array(1024);
+
+        analyser.getByteTimeDomainData(timeByteArray);
+        analyserL.getByteTimeDomainData(timeByteArrayL);
+        analyserR.getByteTimeDomainData(timeByteArrayR);
+
+        const currentTime = performance.now();
+        const elapsedTime = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
+
+        visualizer.render({
+          elapsedTime: elapsedTime,
+          audioLevels: {
+            timeByteArray: Array.from(timeByteArray),
+            timeByteArrayL: Array.from(timeByteArrayL),
+            timeByteArrayR: Array.from(timeByteArrayR),
+          },
+        });
+
+        renderLoopId = requestAnimationFrame(render);
+      }
+
+      render();
+    }
+
+    function stopRenderLoop() {
+      if (renderLoopId) {
+        cancelAnimationFrame(renderLoopId);
+        renderLoopId = null;
+      }
+    }
+
+    // Initialize audio capture
+    initAudioCapture();
+
+    // Handle visibility changes to pause/resume rendering
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && isRendering) {
+        stopRenderLoop();
+      } else if (!document.hidden && isRendering && analyser) {
+        startRenderLoop();
+      }
     });
 
     document.addEventListener("keydown", (e) => {
@@ -329,6 +436,14 @@ var readyStateCheckInterval = setInterval(() => {
 
     window.addEventListener("resize", () => {
       setVisualizerSize();
+    });
+
+    // Cleanup on page unload
+    window.addEventListener("beforeunload", () => {
+      stopRenderLoop();
+      if (audioContext) {
+        audioContext.close();
+      }
     });
   }
 }, 10);
